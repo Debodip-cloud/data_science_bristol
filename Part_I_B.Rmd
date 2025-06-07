@@ -1,0 +1,156 @@
+---
+title: "Part I (B)"
+author: "Debodip Chowdhury"
+date: "2023-12-26"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part I (B)
+## Question 1
+
+so, we know the probability density function. 
+$f_X(x)= \frac {\beta\alpha^\beta}{x^{\beta+1}}$
+Now the cumulative distribution function is:
+$F_X(x)= \int_{-\infty}^x f_x(t) dt =\int_{-\infty}^x \frac {\beta \alpha^\beta}{x^{\beta+1}} dx$
+this equals to:
+$\int_{\alpha}^{x} \frac{\beta \alpha^\beta}{x^{\beta+1}} \, dx = \left[ -\frac{\alpha^\beta}{x^\beta} \right]_{\alpha}^{x}$
+$F_X(x) = 1-\frac{\alpha^\beta}{x^\beta}$
+
+now, we find the quantile function
+$F^{-1}_X(p) = \frac{\alpha}{(1-p)^\frac{1}{\beta}}$
+
+## Question 2 expectation and variance of x
+The mean is: 
+$E(X) = \int_{\alpha}^{\infty}x\frac {\beta \alpha^\beta}{x^{\beta+1}} dx$
+$E(x) = \left[ \frac{\beta \alpha^\beta}{(1-\beta)x^{\beta-1}} \right]_{\alpha}^{\infty} = \frac {\beta\alpha}{(\beta-1)}$
+
+The variance is:
+$Var(X)= E(X^2)-[E(X)]^2$
+$E(X^2) = \int_{\alpha}^{\infty}x^{2}\frac {\beta \alpha^\beta}{x^{\beta+1}} dx$
+$E(x^2) = \left[ \frac{-\beta \alpha^\beta}{(\beta-2)x^{\beta-2}} \right]_{\alpha}^{\infty} = \frac {\beta}{(\beta-2)\alpha^2}$
+therefore,
+$Var(X) = \frac{\beta}{\beta-2}\alpha^2-(\frac{\beta\alpha}{\beta-1})^2$
+##Question 3 
+$E( \overline{X}) = E(\frac{1}{n}\sum_{i=1}^n X_i)$
+let the mean of each variable $X_i$ is$\mu$
+Each $X_i$ has the same distribution as X
+Therefore:
+$E(X_i)= \mu$
+$E(\overline{X})= E(\frac{1}{n}\sum_{i=1}^n \mu)$
+$E(\overline{X})=\mu$
+Therefore,
+$E(\overline{X})=\frac {\beta\alpha}{(\beta-1)}$
+
+let's assume, $Var(X_i)=\sigma^2$.
+The variance, i.e.$Var(\overline{X})$ is:
+$Var(\overline{X})=Var(\frac{1}{n}\sum_{i=1}^n X_i)=(\frac{1}{n})^2 \sum_{i=1}^n Var(X_i)$
+Therefore:
+$Var(\overline{X})=(\frac{1}{n})^2(n.\sigma^2)=\frac{\sigma^2}{n}=(\frac{1}{n})(\frac{\beta}{\beta-2}\alpha^2-(\frac{\beta\alpha}{\beta-1})^2)$
+
+As n approaches infinity, variance converges to zero and the expectation converges to population mean.This is law of large numbers.
+ 
+## Question 4
+```{r}
+library(tidyverse)
+```
+
+```{r}
+
+gen_X <- function(alpha, beta, n) {
+  sample_X <- data.frame(U = runif(n))
+  
+  
+  sample_X <- sample_X %>%
+    mutate(X = (alpha/((1-U)^(1/beta)))) %>%
+    pull(X) 
+  
+  
+}
+
+
+```
+
+  
+##Question 5
+
+```{r}
+
+alpha <- 5
+beta <- 3
+n <- 5000
+
+expectation <- (5*3) / (3 - 1)
+variance <- ((3* (5^2)) / ((3 - 2))) - ((3 * 5 / (3 - 1))^2)
+
+mean_samples <- replicate(1000, mean(gen_X(alpha, beta, n)))
+quantiles <- seq(0.01, 0.99, by = 0.01)
+quantile_values <- quantile(mean_samples, quantiles)
+
+plot(quantile_values, quantiles, pch = 16, xlab = "q", ylab = "t_data")
+
+curve(pnorm(x, mean = expectation, sd = sqrt(variance/n)), col = "red", add = TRUE)
+
+```
+
+
+Our expectation is that the scatter plot will closely follow the red curve, as according to the central limit theorem the average of a large number of independent and identically distributed random variables approaches a normal distribution , as the sample size increases.Increasing the value of n more will make the scatter plot to more closely fit around the red curve. Here in our curve the scatter plot almost perfectly fits around the red curve suggesting that n is sufficiently large.
+
+##question 6
+The likelihood function is given below:
+
+
+$L(q;X)= \quad\prod_{i=1}^n \frac{\beta \alpha^\beta}{x_i^{\beta+1}}$
+therefore: 
+$L(\beta;X)=\frac {\beta^n \alpha^{n\beta}}{\quad\prod_{i=1}^n x_i^{\beta+1}}$
+
+the log-likelihood function is:
+$logL(\beta;X)=log(\frac {\beta^n \alpha^{n\beta}}{\quad\prod_{i=1}^n x_i^{\beta+1}})$
+this simplifies to: 
+$logL(\beta;X)=log(\beta^n)+log(\alpha^{n\beta})-\sum_{i=1}^nlog(x_i^{\beta+1})$
+
+the derivative is:
+$\frac{\partial LogL(\beta;X)}{\partial \beta} = \frac{n}{\beta} +nlog(\alpha)- \sum_{i=1}^n log(x_i)$
+to find the maximizer, derivative should be equal to 0
+$\frac{n}{\beta} +nlog(\alpha)- \sum_{i=1}^n log(x_i)=0$
+$\frac{1}{\beta} +log(\alpha)= \frac{1}{n}\sum_{i=1}^nlog(x_i)$
+$\frac{1}{\beta} +log(\alpha)= \overline{X}$
+$\beta= \frac{1}{\overline{log(x)}-log(\alpha)}$
+here $\overline{log(x)}$ in the mean of log of x
+
+##Question 7
+
+```{r}
+alpha <- 5
+beta <- 3
+n <- c(10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000)
+num_trials_per_size<-5000
+calculate_beta_mle <- function(sample) {
+  n <- length(sample)
+  mle <- 1 / (mean(log(sample) - log(alpha)))
+  return(mle)
+}
+
+data <- crossing(sample_size=n, trials=seq(num_trials_per_size) ) %>%
+  mutate(sample = map(sample_size, ~gen_X(alpha, beta, .x)))%>%
+  mutate(beta_mle = map_dbl(sample, calculate_beta_mle))
+
+
+df_bias<- data %>% group_by(sample_size) %>%
+  summarise(beta_bias = mean(beta_mle) - beta)
+
+ggplot(df_bias, aes(x = sample_size, y = beta_bias)) +
+  geom_line()  +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Bias of MLE for Different Sample Sizes",
+       x = "Sample Size",
+       y = "Bias")
+```
+
+
+the estimator is unbiased  and more consistent as sample size increases.The decreasing tend suggests that the estimator approaches unbiasedness as sample size increases. As n increases it aligns itself entirely with the red line and so becomes consistent.

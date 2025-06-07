@@ -1,0 +1,108 @@
+---
+title: "part I (A)"
+author: "Debodip Chowdhury"
+date: "2023-12-24"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+
+```{r}
+## importing the required liraries
+library(tidyverse)
+```
+
+
+```{r}
+## loading the files
+df<-read.csv("C:/Users/Debodip Chowdhury/Downloads/global_financial_development.csv")
+df_code<-read.csv("C:/Users/Debodip Chowdhury/Downloads/GFD_indicators.csv")
+```
+
+
+```{r}
+## diplaying subset of df
+df_subset <- df %>%
+             select(country, indicator_code, year_2019)
+head(df_subset,5)
+```
+
+
+```{r}
+## displaying subset of df_code()
+head(df_code, 5)
+```
+
+## Question 2
+```{r}
+df_merged <- df %>% 
+             left_join (df_code) %>%
+             select(-indicator_code)
+df_merged %>% select(country, indicator_name, year_2019)%>% head(6)
+```
+## Question 3
+
+```{r}
+##Creating a new dataframe based on stock market returns
+df_stock <- df_merged %>%
+            filter(indicator_name=="StockMarketReturn") %>%
+            arrange(desc(year_2019))
+df_stock %>% select(country, year_2019, year_2020, year_2021) %>% head(5)
+```
+
+## Question 4
+```{r}
+##Average of the five largest values for each country and each indicator
+average_5_largest <- function(vec) {
+  non_missing_values <- vec[!is.na(vec)]
+  
+  if (length(non_missing_values) == 0) {
+    return(NaN)
+  } else {
+    sorted_values <- sort(non_missing_values, decreasing = TRUE)
+    top_5_values <- head(sorted_values, 5)
+    return(mean(top_5_values, na.rm = TRUE))
+  }
+}
+
+
+df_summary <- df_merged %>%
+  rowwise() %>% 
+  mutate(
+    five_best = average_5_largest(c_across(starts_with("year_")))
+  ) 
+df_summary<-  df_summary %>% select(country, indicator_name, five_best)
+df_summary<- df_summary %>% pivot_wider(names_from = indicator_name, values_from = five_best) %>% select(country, BankAccountsPer1000Adults, BankBranchesPer100000Adults, Top5BankAsset, CompaniesPer1000000People, StockMarketReturn)
+
+
+head(df_summary, 6)
+```
+
+## Question 5
+```{r}
+## plotting histogram
+new_data <- df_merged %>%
+  filter(indicator_name == "BankBranchesPer100000Adults", year_2019 <= 500) 
+ggplot(data=new_data, aes(x = year_2019, color=income)) + geom_histogram(binwidth = 10) + xlab("BankBranchesPer100000Adults") + ylab("count") 
+```
+
+
+## Question 6
+```{r}
+## plotting number of companies as a function of year
+selected_countries<-c("Australia","Belgium","Switzerland", "United Kingdom")
+new_data1 <- df_merged %>%
+  filter(indicator_name == "CompaniesPer1000000People", country %in% selected_countries) %>%   select(country, indicator_name, starts_with("year_1975"):starts_with("year_2014"))
+head(new_data1)
+vertical_data=new_data1 %>% 
+              pivot_longer(cols = starts_with("year_"), names_to="year", values_to="CompaniesPer1000000People") %>%
+  select(country, year, CompaniesPer1000000People)
+ggplot(data=vertical_data, aes(x = as.numeric(substr(year,6,9)), y= CompaniesPer1000000People, color=country)) + geom_line() + xlab("year") + ylab("Companies Per 1000000 People") 
+```

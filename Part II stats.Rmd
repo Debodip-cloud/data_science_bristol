@@ -1,0 +1,154 @@
+---
+title: "Part II"
+output:
+  pdf_document: default
+  html_notebook: default
+Author: Debodip Chowdhury
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Question 1
+We follow example task 1 and investigate hypothesis testing.We will explore welch's t-test. It is a modification of student's t-test used whenever the variances of the two groups are unequal. It is also known as a paired t-test. The test assumes that the samples drawn are approximately normally distributed and accepts unequal variances. We use the golf testing dataset from Par Inc. Par Inc. is a manufacturer of golf equipment and they are investigating the driving distances of a new type of golf ball which has a new coating. My dataset contains the driving distances of 40 balls of both new and current types. It has two columns “Current” and “New” and 40 rows. We investigate if there is any differences in mean between the two columns and we carry a hypothesis testing. The null hypothesis is that there is no significant differences in the mean driving distances between the new and current types of golf balls. The alternative hypothesis is that there is a significant difference in the mean driving distances between the new and current types of golf balls.A test statistic is some function of the data used within a statistical hypothesis test. The test-statistic is:
+$T_W=\frac{\overline{X}-\overline{Y}}{ \sqrt{\frac{S_X^2}{n}+{\frac{S_Y^2}{k}}}}$
+where $\overline{X}$ and $\overline{Y}$ are samplemeans and $S_X^2$ and $S_Y^2$ are sample variances. 
+The significance level is an upper bound on the size of the test. This should be chosen in advance of
+seeing the data. we choose the typical value is $\alpha$ = 0.05. The p-value is probability under the null hypothesis that the test statistic will achieve a value as
+extreme or more extreme than the value which is actually observed. A very small p-value indicates that
+the observed data is sufficiently inconsistent with the null hypothesis that the null hypothesis can be reasonably rejected.Test statistics quantify how far observed data deviate from the null hypothesis's expectations.P-values measure the probability of observing such deviation if the null were true.In this way we can determine whether to reject the null and support the alternative hypothesis.
+
+## Question 2
+```{r}
+library(tidyverse)
+```
+
+```{r}
+df<-read.csv("C:/Users/Debodip Chowdhury/Downloads/Golf.csv")
+num_trials<-10000
+sample_size<-40
+set.seed(0)
+# the mean should be the same under null hypothesis
+mu_Current<-mean(df$Current)
+mu_New<-mean(df$Current)
+sigma_Current<-sqrt(var(df$Current))
+sigma_New<-sqrt(var(df$New))
+set.seed(0) # set random seed for reproducibility
+single_alpha_test_size_simulation_df <- data.frame(trial=seq(num_trials)) %>%
+# generate random Gaussian samples
+mutate(sample_Current=map(.x=trial,.f=~rnorm(n=sample_size,mean=mu_Current,sd=sigma_Current)),
+sample_New=map(.x=trial,.f=~rnorm(n=sample_size,mean=mu_New,sd=sigma_New))) %>%
+# generate p values
+mutate(p_value=pmap(.l=list(trial,sample_Current,sample_New),
+.f=~t.test(..2,..3,var.equal = FALSE)$p.value))
+alpha_list = seq(0.01, 0.25, 0.01)
+compute_test_size <- function(alpha){
+# type I error
+type_1_error = single_alpha_test_size_simulation_df$p_value<alpha
+return (mean(type_1_error)) # estimate of coverage probability
+}
+multiple_alpha_test_size_simulation_df <- data.frame(alpha=alpha_list) %>%
+mutate(test_size = map_dbl(alpha, compute_test_size))
+multiple_alpha_test_size_simulation_df %>% ggplot(aes(x=alpha, y=test_size)) +
+geom_point() + ylab('type_1_error') + theme_bw()
+
+```
+In this case, the test size is equal to the significance level.
+
+## Question 3
+
+We use the golf testing dataset from Par Inc. Par Inc. is a manufacturer of golf equipment and they are investigating the driving distances of a new type of golf ball which has a new coating. My dataset contains the driving distances of 40 balls of both new and current types. It has two columns “Current” and “New” and 40 rows. We investigate if there is any differences in mean between the two columns and we carry a hypothesis testing. The null hypothesis is that there is no significant differences in the mean driving distances between the new and current tyes of golf balls. The alternative hypothesis is that there is a significant difference in the mean driving distances between the new and current types of golf balls.
+```{r}
+df %>% print()
+```
+
+```{r}
+test_result <- t.test(df$Current, df$New, var.equal = FALSE)
+print(test_result)
+```
+
+the p-value is 0.188, this is higher than the significance level of 0.05. this suggests that we do not have enough evidence to reject the null hypothesis. There is no significant difference between the mean driving distances of the current and new type of golf balls. This meets our expectations that the two means should be similar.
+
+## Question 4
+The welch'st-test is suitable over here because the two samples consisting of two different types of balls are independent over here. The golf balls are selected randomy and independently. Their variances are not equal.The welch's t-test accepts unequal variances. The welch's t-test has a known distribution under the null hypothesis and emphasizes the difference between null and alternative hypothesis. Under the null hypothesis the test statistic follows a student's t-distribution.
+
+```{r}
+df %>%
+mutate(diff=Current-New) %>%
+ggplot(aes(sample=diff)) + theme_bw()+
+stat_qq()+stat_qq_line(color="blue")+
+labs(x="Theoretical", y="Sample")
+```
+It seems both the samples are aproximately normally distributed. To confirm our findings we have decided to carry out a shapro-wilko test:
+```{r}
+test_result <- shapiro.test(df$Current)
+print(test_result)
+test_result <- shapiro.test(df$New)
+print(test_result)
+```
+P-value means the probability of observing a test-satistic as extreme as or more extreme than the one calculated from the sample data assuming that the null hypothesis is true. In both cases, the p-values are greater than the typical significance level of 0.05. We fail to reject the null value in both of these cases. So we can conclude that both the 'Current' and 'New' data do not deviate significantly from the normal distribution, i.e. they follow normal distribution.
+
+The effect size is a measure of the magnitude of the observed phenomenon which reflects the extent to which the null hypothesis is false. Cohen's D is themostcommonly used measures of effect size. It is calculated as the difference between the means of the two groups divided by the pooled standard deviation.
+
+let's calculate the effect size using Cohen's d:
+```{r}
+mean_diff <- mean(df$Current) - mean(df$New)
+pooled_sd <- sqrt((sd(df$New)^2 + sd(df$Current)^2) / 2)
+cohen_d <- mean_diff / pooled_sd
+print(cohen_d)
+```
+so it has small effect. the difference between the groups is small and may not be significant.
+
+Based on the Welch's t-test, we do not have sufficient evidence to reject the null hypothesis. The p-value of 0.188 is higher than the significance level of 0.05 which indicates that the mean driving distances of 'Current' and 'New' golf balls are not significantly different.This meets our expectations that the two means should be similar.
+
+
+## Question 5
+Sine the p-value is greater than the chosen typical significance level of 0.05, there is no significant difference in the mean driving distances between Current and New types of golf balls. We can say that the new coating applied o this ball will not have any significant impact on the driving distances of the ball.The scientific question it solves is whether the new coating material will have any impact on driving distances.If the statistical test differed then we would say that the difference between the two distances were significant an then our task would be to find whether the ball increased or decreased the distance.We would have performed pairwise comparisons. this meets our expectations.But since the sample size is smaller there is a chance of Type II error occuring.This means we fail to reject the null hypothesis in favor of the alternative hypothesis when the alternative hypothesis holds. So we should consider increasing the sample size. There is a chance that there could be a smaller but practically significant difference.The difference might be practicallysignificant or important. there is a chance of external factors impacting driving distances like weather conditions and golfer skill. Windy climate can cause air resistance which could impact driving distances.Also statistical significance does not imply causation.Also we should apply the new coating on ramdomly selected balls. For repeated studies it is important that we use the same coating material. We should repeat the experiment with increased samples like 500.
+
+
+## Quesion 6
+
+I find it interesting to explore how the statistics and p-value changes when the assumption of equal variance does not hold in a student t-test. I also want to explore how statistical power varies as a function of alpha.
+
+```{r}
+test_result_unequalVariance <- t.test(df$Current, df$New, var.equal = FALSE)
+print(test_result_unequalVariance)
+test_result_equalVariance <- t.test(df$Current, df$New, var.equal = TRUE)
+print(test_result_equalVariance)
+```
+Here we see that p-value only changes by a little, the t-test is robust to small deviations in variance. Then we explore how statistical power varies as a function of alpha. The statistical power of a test is the probability of correctly rejecting the null
+hypothesis when an alternative hypothesis holds.
+
+
+```{r}
+df<-read.csv("C:/Users/Debodip Chowdhury/Downloads/Golf.csv")
+num_trials<-10000
+sample_size<-40
+set.seed(0)
+mu_Current<-mean(df$Current)
+mu_New<-mean(df$New)
+sigma_Current<-sqrt(var(df$Current))
+sigma_New<-sqrt(var(df$New))
+set.seed(0) # set random seed for reproducibility
+single_alpha_test_size_simulation_df <- data.frame(trial=seq(num_trials)) %>%
+# generate random Gaussian samples
+mutate(sample_Current=map(.x=trial,.f=~rnorm(n=sample_size,mean=mu_Current,sd=sigma_Current)),
+sample_New=map(.x=trial,.f=~rnorm(n=sample_size,mean=mu_New,sd=sigma_New))) %>%
+# generate p values
+mutate(p_value=pmap(.l=list(trial,sample_Current,sample_New),
+.f=~t.test(..2,..3,var.equal = FALSE)$p.value))
+alpha_list = seq(0.01, 0.25, 0.01)
+compute_test_size <- function(alpha){
+# type I error
+type_1_error = single_alpha_test_size_simulation_df$p_value<alpha
+return (mean(type_1_error)) # estimate of coverage probability
+}
+multiple_alpha_test_size_simulation_df <- data.frame(alpha=alpha_list) %>%
+mutate(test_size = map_dbl(alpha, compute_test_size))
+multiple_alpha_test_size_simulation_df %>% ggplot(aes(x=alpha, y=test_size)) +
+geom_point() + ylab('Power') + theme_bw()
+
+```
+The rate of increase in power decrease as alpha grows and eventually will flatten out.
