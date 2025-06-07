@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang=""> 
+  <head> 
+    <meta charset="utf-8" /> 
+    <meta name="generator" content="pandoc" /> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" /> 
+    <title>in</title> 
+    <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style> <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]--> 
+  </head> 
+  <body> 
+    <h1><strong>Smart Contracts: Security</strong></h1> 
+    <p>In this worksheet, we will investigate a few common security vulnerabilities of smart contracts.</p> 
+    <h2>Vault Smart Contact</h2> 
+    <p>A vault, is a smart contract that allows user to deposit funds and later withdraw them. The following is an implementation of a vault smart contract:</p> 
+    <pre><code>// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity &gt;=0.7.0 &lt;0.9.0;
+
+contract Vault {
+
+    mapping(address =&gt; uint256) public balances;
+    
+    function deposit() public payable {
+        require(msg.value &gt; 0, "value must be &gt; 0");
+
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw() public {
+        (bool sent, ) = msg.sender.call{value: balances[msg.sender]}("");
+        require(sent, "Transfer failed");
+
+        balances[msg.sender] = 0;
+    }
+}</code></pre> 
+    <h3>Question 1</h3> 
+    <p>Take a few minutes to see if you can understand the code. Either in Remix or using a local environment, deploy the contract and interact with it.</p> 
+    <h3>Question 2</h3> 
+    <p>Can you think of any issues with this smart contract? Briefly discuss this with your classmates.</p> 
+    <details> <summary>Hint:</summary> The smart contract contains a vulnerability that allows an attacker to perform a re-entrancy attack. 
+    </details> 
+    <h3>Question 3</h3> 
+    <p>Write a smart contract that exploits the previous vulnerability. Test your implementation to make sure it works.</p> 
+    <h3>Question 4</h3> 
+    <p>How can this vulnerability be fixed? Fix the implementation so that the attack is no longer possible.</p> 
+    <h2>Auction Smart Contract</h2> 
+    <p>We will now look at a simple auction smart contract:</p> 
+    <pre><code>// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity &gt;=0.7.0 &lt;0.9.0;
+
+contract Auction {
+
+    uint256 public currentPrice;
+    address public currentBest;
+    address public owner;
+    uint256 public end;
+    
+    constructor(uint256 startingPrice, uint256 duration) {
+        owner = msg.sender;
+        currentPrice = startingPrice;
+        end = block.number + duration;
+    }
+
+    function bid() public payable {
+        require(msg.value &gt; currentPrice, "Bid higher");
+        require(block.number &lt;= end, "Auction has ended");
+
+        address payable previousBest = payable(currentBest);
+        uint previousPrice = currentPrice;
+
+        currentBest = msg.sender;
+        currentPrice = msg.value;
+
+        (bool success, ) = previousBest.call{value: previousPrice}("");
+        require(success, "Transfer failed");
+    }
+
+    function claim() public {
+        require(msg.sender == currentBest, "Only winner");
+        require(block.number &gt; end, "Wait until the end");
+
+        address payable previousOwner = payable(owner);
+        owner = msg.sender;
+
+        (bool success, ) = previousOwner.call{value: address(this).balance}("");
+        require(success, "Transfer failed");
+    }
+}</code></pre> 
+    <h3>Question 5</h3> 
+    <p>Again, take a few minutes to see if you can understand the code, deploy the contract and interact with it.</p> 
+    <h3>Question 6</h3> 
+    <p>Can you think of any issues with this smart contract? Briefly discuss this with your classmates.</p> 
+    <details> <summary>Hint:</summary> The smart contract contains a vulnerability that allows an attacker to perform a denial of service attack. 
+    </details> 
+    <h3>Question 7</h3> 
+    <p>Write a smart contract that exploits the previous vulnerability. Test your implementation to make sure it works.</p> 
+    <h3>Question 8</h3> 
+    <p>How can this vulnerability be fixed? Fix the implementation so that the attack is no longer possible.</p> 
+    <h2>Front Running</h2> 
+    <p>We will now shift our focus to a different kind of attack. Front running in the blockchain setting, usually refers to attacks where transactions are artificially re-ordered for the benefit of an attacker. This is usually done by an attacker who observers the unexecuted transactions' list looking for profitable opportunities. When one such opportunity is found, the attacker broadcasts a new transaction that is included in the block before the initial transaction and thus snatching the opportunity from the victim.</p> 
+    <p>For this part, you will need a local development environment or a testnet as this is not possible to perform on Remix. If you are using a local environment, make sure that you disable auto-mining and instead set new block creation to a fix interval of a couple of seconds.</p> 
+    <h3>Question 9</h3> 
+    <p>To demonstrate front running, we will use the following smart contract:</p> 
+    <pre><code>pragma solidity &gt;=0.7.0 &lt;0.9.0;
+
+contract FreeEth {
+    
+    function deposit() public payable {
+        require(msg.value &gt; 0, "value must be &gt; 0");
+    }
+
+    function withdraw() public {
+        (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+        require(sent, "Transfer failed");
+    }
+}</code></pre> 
+    <p>This is a silly smart contract, where anyone is able to deposit funds and anyone is able to withdraw those funds. Deploy the contract and interact with it.</p> 
+    <h3>Question 10</h3> 
+    <p>Demonstrate a front running attack by deploying this contract, depositing some Eth into it, and then sending two consecutive withdraw transactions by two different addresses. Make sure that the second transaction provides a higher reward to the miner (for details check this out: <a href="https://ethereum.org/en/developers/docs/gas/">https://ethereum.org/en/developers/docs/gas/</a>). Make sure that you print the final balances of the two addresses at the end to verify that you attack was successful.</p> 
+    <h3>Question 11</h3> 
+    <p>Can you think of ways to prevent similar attacks? Try to research this, and discuss your findings with your classmates.</p> 
+    <h2>Bonus: Extracting Private Data</h2> 
+    <p>As we have mentioned in the past, by the nature of blockchain systems everything store on the blockchain should be treated as public information. However, when working with smart contracts, we can set variable to both public and private. This might provide a false sense of security, but in reality both public and private variables are accessible to outsiders. The public declaration only automatically creates a "getter" function for our variables.</p> 
+    <p>Extracting private variables, although possible, is tricky and requires extensive knowledge of how storage works on the EVM (for more details: <a href="https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html">https://docs.soliditylang.org/en/latest/internals/layout_in_storage.html</a>). This is what we will look into here.</p> 
+    <p>We will use the following smart contract as an example:</p> 
+    <pre><code>// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity &gt;=0.7.0 &lt;0.9.0;
+
+contract Storage {
+
+    uint256 private password;
+    
+    constructor(uint256 secret) {
+        password = secret;
+    }
+}</code></pre> 
+    <h3>Bonus Question 12</h3> 
+    <p>Our smart contract just stores the value of password, but this initially is not accessible. For example, if you try to deploy this on Remix you won't be able to see this value as we haven't set it to public. Your task is to try to extract this value.</p> 
+    <details> <summary>Hint:</summary> 
+      <p>The following web3.py method will be extremely useful here: <a href="https://web3py.readthedocs.io/en/latest/web3.eth.html#web3.eth.Eth.get_storage_at">https://web3py.readthedocs.io/en/latest/web3.eth.html#web3.eth.Eth.get_storage_at</a></p> 
+    </details> 
+    <h3>Bonus Question 13</h3> 
+    <p>Now that you are more familiar with how storage works on the EVM, add more variables and data structures to the above smart contract and observe how those are stored.</p>  
+  </body>
+</html>
